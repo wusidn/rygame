@@ -13,11 +13,15 @@ public:
 
     static bool open( void );
 
-    static bool update( void );
-
     static bool write( const unsigned char * p_data, size_t p_dataSize );
 
+    static bool bindRecvDataFunc( READ_LISTENER_FUNC p_func );
+
 private:
+
+    static bool sendRecvDataEvent( const unsigned char * p_data, size_t p_dataSize );
+    static unsigned char computeCheckBit( const unsigned char * p_data, size_t p_dataSize );
+
     static std::list< READ_LISTENER_FUNC > sm_readDataListenerList;
     static int sm_fd;
 };

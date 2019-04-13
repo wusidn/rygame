@@ -8,6 +8,7 @@
 #include <cstring>
 #include <sys/time.h>
 #include <functional>
+#include <thread>
 
 using namespace std;
 
@@ -25,7 +26,6 @@ list< Serial::READ_LISTENER_FUNC > Serial::sm_readDataListenerList;
 bool Serial::open( void )
 {
     int ret;
-    unsigned char write_buf[] = { (unsigned char)0xF0, 0x01, 0x01, 0x01, 0xFF, 0x02 };
 
     sm_fd = ::open( SERIAL_FILE, O_RDWR|O_NOCTTY);
     if(sm_fd == -1)
@@ -41,73 +41,135 @@ bool Serial::open( void )
         return false;
     }
 
-    write( write_buf, sizeof( write_buf ) );
+    std::thread([](){
+        int ret;
+        unsigned char Rx_Data[100];
+        unsigned char cmd_buffer[ 20 ];
+        int cmd_buffer_cursor = 0;
+        int t_cmd_len = -1;
 
-    unsigned char Rx_Data[100];
-    unsigned char cmd_buffer[ 20 ];
-    int cmd_buffer_cursor = 0;
-    int t_cmd_len = -1;
-
-    while(1)
-    {
-        ret = read( sm_fd, Rx_Data, 100);
-        if( ret >0 )
+        while(1)
         {
-            for( int i = 0; i < ret; ++i )
+            ret = read( sm_fd, Rx_Data, 100);
+            if( ret >0 )
             {
-
-                if( cmd_buffer_cursor == 0 && Rx_Data[i] != 0x0F )
-                {
-                    continue;
-                }
-
-                cmd_buffer[cmd_buffer_cursor++] = Rx_Data[i];
-
-                if( cmd_buffer_cursor == 4 )
-                {
-                    t_cmd_len = 5 + Rx_Data[i];
-                }
-
-                if( cmd_buffer_cursor > 5 && cmd_buffer_cursor == t_cmd_len )
+                for( int i = 0; i < ret; ++i )
                 {
 
-                    int t_check = 0;
-
-                    for( int n = 1; n < t_cmd_len - 1; ++n )
+                    if( cmd_buffer_cursor == 0 && Rx_Data[i] != 0x0F )
                     {
-                        t_check += cmd_buffer[n];
+                        continue;
                     }
 
-                    if( (t_check << 24) >> 24 == cmd_buffer[t_cmd_len - 1] )
+                    cmd_buffer[cmd_buffer_cursor++] = Rx_Data[i];
+
+                    if( cmd_buffer_cursor == 4 )
+                    {
+                        t_cmd_len = 5 + Rx_Data[i];
+                    }
+
+                    if( cmd_buffer_cursor > 5 && cmd_buffer_cursor == t_cmd_len )
                     {
 
-                        cout << "----> cmd:";
-                        for( int n = 0; n < t_cmd_len; ++n )
+                        if( computeCheckBit( cmd_buffer + 1, t_cmd_len - 2 ) == cmd_buffer[t_cmd_len - 1] )
                         {
-                            cout << (unsigned short)cmd_buffer[n] << " ";
+                            sendRecvDataEvent( cmd_buffer, t_cmd_len );
                         }
-                        cout << endl;
 
+                        cmd_buffer_cursor = 0;
                     }
-
-                    cmd_buffer_cursor = 0;
                 }
+            }else{
+                usleep( 1000 );
             }
+
+            usleep( 100 );
         }
-    }
+
+    }).detach();
 
     return true;
 }
 
 bool Serial::write( const unsigned char * p_data, size_t p_dataSize )
 {
+
     if( sm_fd == -1 )
     {
         return false;
     }
-    ::write( sm_fd, p_data, p_dataSize );
+
+    if( !p_data )
+    {
+        return false;
+    }
+
+    size_t t_dataSize = p_dataSize + 2;
+    unsigned char * t_data = (unsigned char *)malloc( t_dataSize );
+    
+
+    t_data[0] = 0xF0;
+
+    memcpy( t_data + 1, p_data, p_dataSize );
+
+    t_data[p_dataSize + 1] = computeCheckBit( p_data, p_dataSize );
+    
+
+    ::write( sm_fd, t_data, t_dataSize );
+
+    cout << "----> send cmd:";
+    for( int n = 0; n < t_dataSize; ++n )
+    {
+        cout << hex << (unsigned short)t_data[n] << " ";
+    }
+    cout << endl;
+
+    free( t_data );
 
     return true;
+}
+
+bool Serial::bindRecvDataFunc( READ_LISTENER_FUNC p_func )
+{
+    if( !p_func )
+    {
+        cout << "recv func is null" << endl;
+        return false;
+    }
+
+    sm_readDataListenerList.push_back( p_func );
+    return true;
+}
+
+
+bool Serial::sendRecvDataEvent( const unsigned char * p_data, size_t p_dataSize )
+{
+
+    cout << "----> cmd:";
+    for( int n = 0; n < p_dataSize; ++n )
+    {
+        cout << hex << (unsigned short)p_data[n] << " ";
+    }
+    cout << endl;
+
+    for( auto t_item : sm_readDataListenerList )
+    {
+        t_item( p_data, p_dataSize );
+    }
+
+    return true;
+}
+
+unsigned char Serial::computeCheckBit( const unsigned char * p_data, size_t p_dataSize )
+{
+    int t_check = 0;
+
+    for( int n = 0; n < p_dataSize; ++n )
+    {
+        t_check += p_data[n];
+    }
+
+    return (t_check << 24) >> 24;
 }
 
 int set_opt(int fd,int nSpeed,int nBits,char nEvent,int nStop)
