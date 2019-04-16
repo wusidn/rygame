@@ -50,11 +50,19 @@ endif()
 list(APPEND GAME_SOURCE
      Classes/AppDelegate.cpp
      Classes/LoadingScene.cpp
+     Classes/DeviceControl.cpp
+     Classes/MainScene.cpp
+     Classes/DataBase.cpp
+     Classes/Config.cpp
      Classes/Serial.cpp
      )
 list(APPEND GAME_HEADER
      Classes/AppDelegate.h
      Classes/LoadingScene.h
+     Classes/DeviceControl.h
+     Classes/MainScene.h
+     Classes/DataBase.h
+     Classes/Config.h
      Classes/Serial.h
      )
 

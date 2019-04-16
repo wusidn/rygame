@@ -12,13 +12,6 @@ public:
     
 protected:
     virtual bool init( void ) override;
-    
-private:
-    static bool sm_needInitDevice;
-
-    static bool cmdCompare( const unsigned char * p_cmdLeft, const unsigned char * p_cmdRight, size_t p_compareSize );
-
-    static unsigned char sm_cmdStartDeviceListeanRes[];
 };
 
 #endif //__LOADING_SCENE_H__
