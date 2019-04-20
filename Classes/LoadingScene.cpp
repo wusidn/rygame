@@ -1,11 +1,13 @@
 #include "LoadingScene.h"
 #include "DeviceControl.h"
 #include "Config.h"
+#include "AudioEngine.h"
 
 #include <iostream>
 
 USING_NS_CC;
 using namespace cocos2d::ui;
+using namespace cocos2d::experimental;
 
 
 bool LoadingScene::init( void )
@@ -26,9 +28,10 @@ bool LoadingScene::init( void )
     }
 
     DeviceControl::listenButtonState( []( int p_btnId, bool p_state ){
-        if( p_btnId == 0x10 && p_state )
+        if( p_btnId == BTN_COIN && p_state )
         {
             Config::setCoinNumber( Config::getCoinNumber() + 1 );
+            AudioEngine::play2d( "audios/Coin.mp3" );
         }
     } );
 

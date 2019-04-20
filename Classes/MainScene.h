@@ -2,7 +2,7 @@
 #define __MAIN_SCENE_H__
 
 #include "cocos2d.h"
-#include <map>
+#include <vector>
 
 USING_NS_CC;
 
@@ -12,9 +12,14 @@ public:
     CREATE_FUNC( MainScene );
 protected:
     virtual bool init( void ) override;
+
+    void playBgm( void );
 private:
     static int sm_listenId;
-    static std::map< int, int > sm_rank;
+    int m_canPlay;
+    static std::vector< int > sm_rank;
+
+    int sm_bgmId;
 };
 
 #endif //__MAIN_SCENE_H__

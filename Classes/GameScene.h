@@ -11,6 +11,9 @@ public:
     CREATE_FUNC( GameScene );
 protected:
     virtual bool init( void ) override;
+
+private:
+    int sm_listenButtonId;
 };
 
 #endif //__GAME_SCENE_H__

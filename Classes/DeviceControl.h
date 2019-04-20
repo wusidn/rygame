@@ -4,7 +4,11 @@
 #include <cstddef>
 #include <functional>
 #include <map>
-#include <map>
+
+
+#define BTN_START 0x07
+#define BTN_COIN  0x10
+
 
 class DeviceControl
 {
