@@ -14,7 +14,7 @@ unsigned char DeviceControl::sm_cmdStartDeviceListeanRes[] = { (unsigned char)0x
 unsigned char DeviceControl::sm_cmdButtonStateChanged[] = { (unsigned char)0x00, 0x0A, 0x02 };
 
 
-std::vector< std::function< void( int, bool ) > > DeviceControl::sm_buttonStateListenPool;
+std::map< int, std::function< void( int, bool ) > >  DeviceControl::sm_buttonStateListenPool;
 
 bool DeviceControl::init()
 {
@@ -64,9 +64,25 @@ bool DeviceControl::init()
 }
 
 
-bool DeviceControl::listenButtonState( std::function< void( int, bool ) > p_callBack )
+int DeviceControl::listenButtonState( std::function< void( int, bool ) > p_callBack )
 {
-    sm_buttonStateListenPool.push_back( p_callBack );
+    static int s_listenId = 0;
+
+    sm_buttonStateListenPool[s_listenId] = p_callBack;
+
+    return s_listenId++;
+} 
+
+
+bool DeviceControl::unbindListenButtonState( int p_listenId )
+{
+    auto t_it = sm_buttonStateListenPool.find( p_listenId );
+    if( t_it == sm_buttonStateListenPool.end() )
+    {
+        return false;
+    }
+
+    sm_buttonStateListenPool.erase( t_it );
 
     return true;
 }
@@ -74,9 +90,12 @@ bool DeviceControl::listenButtonState( std::function< void( int, bool ) > p_call
 
 void DeviceControl::onButtonStateChanged( int p_btnId, bool p_state )
 {
-    for( auto func : sm_buttonStateListenPool )
+    for( auto item : sm_buttonStateListenPool )
     {
-        func( p_btnId, p_state );
+        Director::getInstance()->getScheduler()->performFunctionInCocosThread([=]
+        {
+            item.second( p_btnId, p_state );
+        });
     }
 }
 

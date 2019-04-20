@@ -4,14 +4,15 @@
 #include <cstddef>
 #include <functional>
 #include <map>
-#include <vector>
+#include <map>
 
 class DeviceControl
 {
 public:
     static bool init( void );
 
-    static bool listenButtonState( std::function< void( int, bool ) > p_callBack );
+    static int listenButtonState( std::function< void( int, bool ) > p_callBack );
+    static bool unbindListenButtonState( const int p_id );
 
 private:
     static bool sm_needInitDevice;
@@ -21,7 +22,7 @@ private:
     static unsigned char sm_cmdStartDeviceListeanRes[];
     static unsigned char sm_cmdButtonStateChanged[];
 
-    static std::vector< std::function< void( int, bool ) > > sm_buttonStateListenPool;
+    static std::map< int, std::function< void( int, bool ) > > sm_buttonStateListenPool;
 };
 
 
