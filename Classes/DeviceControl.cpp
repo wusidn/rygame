@@ -5,6 +5,7 @@
 #include <iostream>
 #include "cocos2d.h"
 #include "MainScene.h"
+#include "GameScene.h"
 
 USING_NS_CC;
 
@@ -12,6 +13,9 @@ bool DeviceControl::sm_needInitDevice = true;
 
 unsigned char DeviceControl::sm_cmdStartDeviceListeanRes[] = { (unsigned char)0x00, 0x01, 0x01, 0xFF };
 unsigned char DeviceControl::sm_cmdButtonStateChanged[] = { (unsigned char)0x00, 0x0A, 0x02 };
+
+unsigned char DeviceControl::sm_cmdOpenRelay1[] = { (unsigned char)0x10, 0x12, 0x03, 0xFF, 0xFF, 0x0D };
+unsigned char DeviceControl::sm_cmdCloseRelay1[] = { (unsigned char)0x10, 0x12, 0x03, 0x00, 0x00, 0x0D };
 
 
 std::map< int, std::function< void( int, bool ) > >  DeviceControl::sm_buttonStateListenPool;
@@ -85,6 +89,48 @@ bool DeviceControl::unbindListenButtonState( int p_listenId )
     sm_buttonStateListenPool.erase( t_it );
 
     return true;
+}
+
+void DeviceControl::openBaffle( std::function< void(void) > p_opendCallback )
+{
+    static int t_listenId;
+    static std::function< void(void) > t_opendFunc;
+    t_opendFunc = p_opendCallback;
+    Serial::write( sm_cmdOpenRelay1, sizeof( sm_cmdOpenRelay1 ) );
+
+
+    t_listenId = listenButtonState( [=]( int p_btnId, bool p_state ){
+        if( p_btnId == 0x01 && p_state )
+        {
+            Serial::write( sm_cmdCloseRelay1, sizeof( sm_cmdCloseRelay1 ) );
+            
+            Director::getInstance()->getScheduler()->performFunctionInCocosThread([=]
+            {
+                t_opendFunc();
+            });
+            unbindListenButtonState( t_listenId );
+        }
+    } );
+}
+
+void DeviceControl::closeBaffle( std::function< void(void) > p_closedCallback )
+{
+    static int t_listenId;
+    static std::function< void(void) > t_closedFunc;
+    t_closedFunc = p_closedCallback;
+    Serial::write( sm_cmdOpenRelay1, sizeof( sm_cmdOpenRelay1 ) );
+
+    t_listenId = listenButtonState( [=]( int p_btnId, bool p_state ){
+        if( p_btnId == 0x02 && p_state )
+        {
+            Serial::write( sm_cmdCloseRelay1, sizeof( sm_cmdCloseRelay1 ) );
+            Director::getInstance()->getScheduler()->performFunctionInCocosThread([=]
+            {
+                t_closedFunc();
+            });
+            unbindListenButtonState( t_listenId );
+        }
+    } );
 }
 
 

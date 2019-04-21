@@ -120,7 +120,7 @@ bool Serial::write( const unsigned char * p_data, size_t p_dataSize )
     cout << "----> send cmd:";
     for( int n = 0; n < t_dataSize; ++n )
     {
-        cout << hex << (unsigned short)t_data[n] << " ";
+        cout << hex << (unsigned short)t_data[n] << dec << " ";
     }
     cout << endl;
 
@@ -148,7 +148,7 @@ bool Serial::sendRecvDataEvent( const unsigned char * p_data, size_t p_dataSize 
     cout << "----> cmd:";
     for( int n = 0; n < p_dataSize; ++n )
     {
-        cout << hex << (unsigned short)p_data[n] << " ";
+        cout << hex << (unsigned short)p_data[n] << dec << " ";
     }
     cout << endl;
 
