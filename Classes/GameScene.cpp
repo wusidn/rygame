@@ -102,17 +102,24 @@ bool GameScene::init( void )
     t_curtain->drawSolidRect( t_origin, t_visibleSizeHalf * 2.0f, Color4F( 0.0f, 0.0f, 0.0f, 0.8f ) );
     addChild( t_curtain );
 
-    auto t_promptBoxSprite = Sprite::create( "GamePromptBox.png" );
-    auto t_promptBoxSizeHalf = t_promptBoxSprite->getContentSize() * 0.5f;
-    t_promptBoxSprite->setPosition( Vec2( t_center.x, t_center.y + t_visibleSizeHalf.height + t_promptBoxSizeHalf.height ) );
-    addChild( t_promptBoxSprite );
+    m_promptBoxSprite = Sprite::create( "GamePromptBox.png" );
+    auto t_promptBoxSizeHalf = m_promptBoxSprite->getContentSize() * 0.5f;
+    m_promptBoxSprite->setPosition( Vec2( t_center.x, t_center.y + t_visibleSizeHalf.height + t_promptBoxSizeHalf.height ) );
+    addChild( m_promptBoxSprite );
 
-    auto t_LevelSprite = Sprite::create( "GameLevel1.png" );
-    auto t_LevelSizeHalf = t_LevelSprite->getContentSize() * 0.5f;
-    t_LevelSprite->setPosition( t_promptBoxSizeHalf );
-    t_promptBoxSprite->addChild( t_LevelSprite );
+    m_promptSprite = Sprite::create( "GameLevel1.png" );
+    auto t_LevelSizeHalf = m_promptSprite->getContentSize() * 0.5f;
+    m_promptSprite->setPosition( Vec2( t_promptBoxSizeHalf.width, t_promptBoxSizeHalf.height + 20.0f ) );
+    m_promptBoxSprite->addChild( m_promptSprite );
 
-    // t_promptBoxSprite->setVisible( false );
+
+    std::stringstream t_targetScore;
+    t_targetScore << "目标分：" << m_targetScoreList[0];
+    m_promptLabel = Label::createWithTTF( t_targetScore.str(), "fonts/MF-MINGHEI-NONCOMMERCIAL-REGULAR.ttf", 60 );
+    m_promptLabel->setPosition( Vec2( t_promptBoxSizeHalf.width, t_promptBoxSizeHalf.height - 120.0f ) );
+    m_promptBoxSprite->addChild( m_promptLabel );
+
+    // m_promptBoxSprite->setVisible( false );
 
     auto t_time1 = Sprite::create( "Game1.png" );
     t_time1->setPosition( t_center );
@@ -147,14 +154,19 @@ bool GameScene::init( void )
             } ),
 
             ActionFloat::create( 1.0f, 1.0f, 0.0f, [=]( float p_data ){
-                t_promptBoxSprite->setPosition( Vec2( t_center.x, t_center.y + ( t_promptBoxSizeHalf.height + t_visibleSizeHalf.height ) * p_data ) );
+                m_promptBoxSprite->setPosition( Vec2( t_center.x, t_center.y + ( t_promptBoxSizeHalf.height + t_visibleSizeHalf.height ) * p_data ) );
             } ),
 
             DelayTime::create( 1.6f ),
 
             ActionFloat::create( 0.1f, 1.0f, 0.0f, [=]( float p_data ){
-                t_promptBoxSprite->setOpacity( (int)( 255 * p_data ) );
-                t_LevelSprite->setOpacity( (int)( 255 * p_data ) );
+                m_promptBoxSprite->setOpacity( (int)( 255 * p_data ) );
+                m_promptSprite->setOpacity( (int)( 255 * p_data ) );
+                m_promptLabel->setOpacity( (int)( 255 * p_data ) );
+            } ),
+
+            CallFunc::create( [=](){
+                m_promptBoxSprite->setVisible( false );
             } ),
 
             DelayTime::create( 0.6f ),
@@ -247,12 +259,12 @@ bool GameScene::init( void )
     sm_listenButtonId = DeviceControl::listenButtonState( [=]( int p_btnId, bool p_state ){
         if( p_btnId == BTN_START && p_state )
         {
-            DeviceControl::closeBaffle([]{
-            
-            });
-            Director::getInstance()->replaceScene( TransitionFade::create( 3.0f, MainScene::create() ) );
+            if( m_gameState == GameState::End )
+            {
+                Director::getInstance()->replaceScene( TransitionFade::create( 3.0f, MainScene::create() ) );
 
-            DeviceControl::unbindListenButtonState( sm_listenButtonId );
+                DeviceControl::unbindListenButtonState( sm_listenButtonId );
+            }
         }
         else if( p_btnId == BTN_GOAL && p_state ){
 
@@ -274,6 +286,33 @@ bool GameScene::init( void )
     } );
 
 
+    m_gameEndFunc = [=](){
+
+
+        DeviceControl::closeBaffle([]{
+            
+        });
+
+        m_promptBoxSprite->setPosition( Vec2( t_center.x, t_center.y + t_visibleSizeHalf.height + t_promptBoxSizeHalf.height ) );
+        m_promptBoxSprite->setVisible( true );
+        m_promptBoxSprite->setOpacity( 255 );
+
+        m_promptSprite->setOpacity( 255 );
+        m_promptLabel->setOpacity( 255 );
+
+        m_promptSprite->setTexture( "GameEnd.png" );
+        std::stringstream t_sstr;
+        t_sstr << "最终得分：" << m_gameScore;
+        m_promptLabel->setString( t_sstr.str() );
+
+        runAction( ActionFloat::create( 1.0f, 1.0f, 0.0f, [=]( float p_data ){
+                m_promptBoxSprite->setPosition( Vec2( t_center.x, t_center.y + ( t_promptBoxSizeHalf.height + t_visibleSizeHalf.height ) * p_data ) );
+        } ) );
+
+        
+        // runAction()
+    };
+
     schedule( schedule_selector( GameScene::update ) );
 
     return true;
@@ -288,6 +327,8 @@ void GameScene::update( float p_dt )
         if( m_gameTime - p_dt < 0 )
         {
             m_gameState = GameState::End;
+
+            m_gameEndFunc();
             return;
         }
 

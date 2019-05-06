@@ -3,6 +3,7 @@
 
 #include "cocos2d.h"
 #include <vector>
+#include <functional>
 
 USING_NS_CC;
 
@@ -29,7 +30,11 @@ private:
     int m_gameScore;
     std::vector< int > m_targetScoreList;
 
+    std::function< void(void) > m_gameEndFunc;
+
     Sprite * m_gameTimeBit1Sprite, * m_gameTimeBit2Sprite;
+    Sprite * m_promptBoxSprite, * m_promptSprite;
+    Label * m_promptLabel;
 };
 
 #endif //__GAME_SCENE_H__
