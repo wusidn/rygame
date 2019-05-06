@@ -7,8 +7,8 @@
 
 
 #define BTN_START 0x07
-#define BTN_COIN  0x10
-#define BTN_GOAL  0x0F
+#define BTN_COIN  0x03
+#define BTN_GOAL  0x06
 
 
 class DeviceControl

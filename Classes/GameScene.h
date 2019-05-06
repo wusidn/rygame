@@ -24,9 +24,12 @@ protected:
 private:
     int sm_listenButtonId;
     GameState m_gameState; 
-    int m_gameLevel, m_gameTime;
-    float m_gameScore;
+    float m_gameTime;
+    int m_gameLevel;
+    int m_gameScore;
     std::vector< int > m_targetScoreList;
+
+    Sprite * m_gameTimeBit1Sprite, * m_gameTimeBit2Sprite;
 };
 
 #endif //__GAME_SCENE_H__

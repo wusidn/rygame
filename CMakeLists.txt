@@ -56,6 +56,7 @@ list(APPEND GAME_SOURCE
      Classes/Config.cpp
      Classes/Serial.cpp
      Classes/GameScene.cpp
+     Classes/ScoreNumber.cpp
      )
 list(APPEND GAME_HEADER
      Classes/AppDelegate.h
@@ -66,6 +67,7 @@ list(APPEND GAME_HEADER
      Classes/Config.h
      Classes/Serial.h
      Classes/GameScene.h
+     Classes/ScoreNumber.h
      )
 
 if(ANDROID)
