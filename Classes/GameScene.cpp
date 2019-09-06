@@ -4,6 +4,7 @@
 #include "MainScene.h"
 #include "AudioEngine.h"
 #include "ScoreNumber.h"
+#include "Config.h"
 
 #include <iostream>
 
@@ -24,6 +25,7 @@ bool GameScene::init( void )
     m_gameState = GameState::Before;
     m_gameLevel = 0;
     m_gameScore = 0;
+    m_sumScore = 0;
     m_gameTime = 60.99f;
 
     auto t_visibleSizeHalf = Director::getInstance()->getVisibleSize() * 0.5f;
@@ -37,10 +39,15 @@ bool GameScene::init( void )
     t_background->setScale( t_visibleSizeHalf.width / t_backgroundSizeHalf.width, t_visibleSizeHalf.height / t_backgroundSizeHalf.height );
     addChild( t_background );
 
-    auto t_gameLevelSprite = Sprite::create( "GameLevel1.png" );
-    t_gameLevelSprite->setPosition( Vec2( 180.0f, t_origin.y + t_visibleSizeHalf.height * 2.0f - 55.0f ) );
-    t_gameLevelSprite->setScale( 0.4f );
-    addChild( t_gameLevelSprite );
+    // auto t_qiu = Sprite::create( "qiu/qiu_23.png" );
+    // auto t_qiuSizeHalf = t_qiu->getContentSize() * 0.5f;
+    // t_qiu->setPosition( Vec2( t_qiuSizeHalf.width, t_qiuSizeHalf.height ) );
+    // addChild( t_qiu );
+
+    m_gameLevelSprite = Sprite::create( "GameLevel1.png" );
+    m_gameLevelSprite->setPosition( Vec2( 180.0f, t_origin.y + t_visibleSizeHalf.height * 2.0f - 55.0f ) );
+    m_gameLevelSprite->setScale( 0.4f );
+    addChild( m_gameLevelSprite );
 
 
     auto t_gameStopWatchSprite = Sprite::create( "GameStopWatch45.png" );
@@ -119,8 +126,6 @@ bool GameScene::init( void )
     m_promptLabel->setPosition( Vec2( t_promptBoxSizeHalf.width, t_promptBoxSizeHalf.height - 120.0f ) );
     m_promptBoxSprite->addChild( m_promptLabel );
 
-    // m_promptBoxSprite->setVisible( false );
-
     auto t_time1 = Sprite::create( "Game1.png" );
     t_time1->setPosition( t_center );
     addChild( t_time1 );
@@ -151,6 +156,31 @@ bool GameScene::init( void )
                 t_time3->setScale( 5.0f );
                 t_time3->setOpacity( 0 );
                 t_time3->setVisible( true );
+
+                m_gameScore = 0;
+                m_gameTime = 60.99;
+
+                t_scoreNumber_1->setNumber( 0 );
+                t_scoreNumber_2->setNumber( 0 );
+                t_scoreNumber_3->setNumber( 0 );
+
+                std::stringstream t_sstr;
+
+                t_sstr << "GameLevel" << m_gameLevel + 1 <<  ".png";
+
+                m_promptSprite->setTexture( t_sstr.str() );
+                m_gameLevelSprite->setTexture( t_sstr.str() );
+
+                t_sstr.str( "" );
+                t_sstr << "目标分：" << m_targetScoreList[m_gameLevel];
+
+                m_promptLabel->setString( t_sstr.str() );
+
+                t_sstr.str( "" );
+                t_sstr << m_targetScoreList[m_gameLevel];
+
+                t_gameTargetScoreLabel->setString( t_sstr.str() );
+
             } ),
 
             ActionFloat::create( 1.0f, 1.0f, 0.0f, [=]( float p_data ){
@@ -243,8 +273,9 @@ bool GameScene::init( void )
         runAction( t_readyTime );
     };
 
-    DeviceControl::openBaffle( [=](){
-        runAction( Sequence::create( 
+     if( FREE_GAME )
+    {
+       runAction( Sequence::create( 
 
             DelayTime::create( 2.0f ),
             
@@ -252,8 +283,20 @@ bool GameScene::init( void )
                 t_CountDown();
             } ),
             nullptr
-         ) );
-    } );
+        ) );
+    }else{
+         DeviceControl::openBaffle( [=](){
+            runAction( Sequence::create( 
+
+                DelayTime::create( 2.0f ),
+                
+                CallFunc::create( [=](){
+                    t_CountDown();
+                } ),
+                nullptr
+            ) );
+        } );
+    }
 
 
     sm_listenButtonId = DeviceControl::listenButtonState( [=]( int p_btnId, bool p_state ){
@@ -261,9 +304,15 @@ bool GameScene::init( void )
         {
             if( m_gameState == GameState::End )
             {
-                Director::getInstance()->replaceScene( TransitionFade::create( 3.0f, MainScene::create() ) );
-
                 DeviceControl::unbindListenButtonState( sm_listenButtonId );
+
+                //Director::getInstance()->replaceScene( TransitionFade::create( 3.0f, MainScene::create() ) );
+                Director::getInstance()->replaceScene( MainScene::create() );
+            }
+
+            if( m_gameState == GameState::PassThrough )
+            {
+                t_CountDown();
             }
         }
         else if( p_btnId == BTN_GOAL && p_state ){
@@ -273,7 +322,9 @@ bool GameScene::init( void )
                 return;
             }
 
-            m_gameScore += 1;
+            m_gameScore += ( m_gameTime > 15.0f ? 2 : 3 );
+
+            AudioEngine::play2d( "audios/Goal.mp3" );
 
             unsigned short t_hundred = m_gameScore / 100 % 10;
             unsigned short t_shiwei = m_gameScore / 10 % 10;
@@ -282,16 +333,15 @@ bool GameScene::init( void )
             t_scoreNumber_1->setNumber( t_hundred );
             t_scoreNumber_2->setNumber( t_shiwei );
             t_scoreNumber_3->setNumber( t_unit );
+            
         }
     } );
 
 
     m_gameEndFunc = [=](){
 
-
-        DeviceControl::closeBaffle([]{
-            
-        });
+        
+        AudioEngine::play2d( "audios/GameEnd.wav" );
 
         m_promptBoxSprite->setPosition( Vec2( t_center.x, t_center.y + t_visibleSizeHalf.height + t_promptBoxSizeHalf.height ) );
         m_promptBoxSprite->setVisible( true );
@@ -300,15 +350,42 @@ bool GameScene::init( void )
         m_promptSprite->setOpacity( 255 );
         m_promptLabel->setOpacity( 255 );
 
-        m_promptSprite->setTexture( "GameEnd.png" );
+        if( m_gameScore >= m_targetScoreList[m_gameLevel] )
+        {
+            m_gameLevel++;
+            if( m_gameLevel >= m_targetScoreList.size() )
+            {
+                //
+                m_promptSprite->setTexture( "GameEnd.png" );
+            }else{
+                m_promptSprite->setTexture( "PassThrough.png" );
+
+                m_gameState = GameState::PassThrough;
+            }
+        }else{
+            m_promptSprite->setTexture( "GameEnd.png" );
+        }
+
+        if( !FREE_GAME && m_gameState == GameState::End )
+        {
+            DeviceControl::closeBaffle([]{
+                        
+            });
+        }
+
+
+        m_sumScore += m_gameScore;
+        
         std::stringstream t_sstr;
-        t_sstr << "最终得分：" << m_gameScore;
+        t_sstr << ( m_gameState == GameState::End ? "最终" : "当前" ) << "得分：" << m_sumScore;
         m_promptLabel->setString( t_sstr.str() );
 
         runAction( ActionFloat::create( 1.0f, 1.0f, 0.0f, [=]( float p_data ){
                 m_promptBoxSprite->setPosition( Vec2( t_center.x, t_center.y + ( t_promptBoxSizeHalf.height + t_visibleSizeHalf.height ) * p_data ) );
         } ) );
 
+
+        MainScene::setRank( m_sumScore );
         
         // runAction()
     };

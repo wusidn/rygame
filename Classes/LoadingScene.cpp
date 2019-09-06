@@ -28,7 +28,7 @@ bool LoadingScene::init( void )
     }
 
     DeviceControl::listenButtonState( []( int p_btnId, bool p_state ){
-        if( p_btnId == BTN_COIN && p_state )
+        if( ( p_btnId == BTN_COIN_1 || p_btnId == BTN_COIN_2 ) && p_state )
         {
             Config::setCoinNumber( Config::getCoinNumber() + 1 );
             AudioEngine::play2d( "audios/Coin.mp3" );

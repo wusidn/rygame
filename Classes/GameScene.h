@@ -14,6 +14,7 @@ class GameScene: public Scene
         Before = 0,
         Ready,
         TPT,
+        PassThrough,
         End
     };
 
@@ -28,12 +29,13 @@ private:
     float m_gameTime;
     int m_gameLevel;
     int m_gameScore;
+    int m_sumScore;
     std::vector< int > m_targetScoreList;
 
     std::function< void(void) > m_gameEndFunc;
 
     Sprite * m_gameTimeBit1Sprite, * m_gameTimeBit2Sprite;
-    Sprite * m_promptBoxSprite, * m_promptSprite;
+    Sprite * m_promptBoxSprite, * m_promptSprite, * m_gameLevelSprite;
     Label * m_promptLabel;
 };
 

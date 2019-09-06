@@ -4,6 +4,7 @@
 #include "GameScene.h"
 #include "AudioEngine.h"
 #include <iostream>
+#include "Config.h"
 
 #define GAME_PRICE 3
 #define RANK_COUNT 5
@@ -14,6 +15,22 @@ int MainScene::sm_listenId = 0;
 
 std::vector< int > MainScene::sm_rank;
 
+
+void MainScene::setRank( const int p_score )
+{
+    int t_tmp = p_score;
+    for( int i = 0; i < RANK_COUNT; ++i )
+    {
+        if( sm_rank[i] < t_tmp )
+        {
+            int tmp = sm_rank[i];
+            sm_rank[i] = t_tmp;
+            t_tmp = tmp;
+        }
+    }
+}
+
+
 bool MainScene::init( void )
 {
     if( !Scene::init() )
@@ -21,7 +38,14 @@ bool MainScene::init( void )
         return false;
     }
 
+    for( int i = 0; i < RANK_COUNT; ++i )
+    {
+        sm_rank.push_back( 0 );
+    }
+
     int t_coinNumber = Config::getCoinNumber();
+
+    DeviceControl::showCoin( t_coinNumber );
 
     auto t_visibleSizeHalf = Director::getInstance()->getVisibleSize() * 0.5f;
     Vec2 t_origin = Director::getInstance()->getVisibleOrigin();
@@ -60,14 +84,14 @@ bool MainScene::init( void )
     for( int i = 0; i < RANK_COUNT; i++)
     {
         std::stringstream t_sstr;
-        if( sm_rank.size() > i )
+        if( sm_rank.size() > i && sm_rank[i] != 0 )
         {
             t_sstr << sm_rank[i];
         }else{
             t_sstr << "-";
         }
         auto t_label = Label::createWithTTF( t_sstr.str(), "fonts/AMSIPRO-ULTRA.ttf", 70 );
-        t_label->setPosition( Vec2( t_rankListBgSpriteSizeHalf.width + ( ceil(i / 2.0f) * (i % 2 ? 1 : -1) * 250.0f )  , t_rankListBgSpriteSizeHalf.height - 80.0f ) );
+        t_label->setPosition( Vec2( t_rankListBgSpriteSizeHalf.width + ( ceil(i / 2.0f) * (i % 2 ? -1 : 1) * 250.0f )  , t_rankListBgSpriteSizeHalf.height - 80.0f ) );
         t_rankListBgSprite->addChild( t_label );
     }
 
@@ -129,9 +153,12 @@ bool MainScene::init( void )
 
     runAction( RepeatForever::create( t_animation ) );
 
+    m_canPlay = Config::getCoinNumber() >= GAME_PRICE;
+
+    playBgm();
 
     sm_listenId = DeviceControl::listenButtonState( [t_coinNumLabel, t_tipsSprite, t_rankListTipsSprite, this]( int p_btnId, bool state ){
-        if( p_btnId == BTN_COIN && state ){
+        if( ( p_btnId == BTN_COIN_1 || p_btnId == BTN_COIN_2 ) && state ){
             std::stringstream t_sstr;
             t_sstr << Config::getCoinNumber() << "/" << GAME_PRICE;
             t_coinNumLabel->setString( t_sstr.str() );
@@ -144,7 +171,7 @@ bool MainScene::init( void )
                 t_rankListTipsSprite->setTexture( "MainStartGameText.png" );
             }
         }else if( p_btnId == BTN_START && state ){
-            if( !m_canPlay ){
+            if( !FREE_GAME && !m_canPlay ){
                 return;
             }
 
@@ -157,14 +184,12 @@ bool MainScene::init( void )
 
             Director::getInstance()->replaceScene( TransitionFade::create( 3.0f, GameScene::create() ) );
 
-            Config::setCoinNumber( Config::getCoinNumber() - GAME_PRICE );
-
+            if( !FREE_GAME )
+            {
+                Config::setCoinNumber( Config::getCoinNumber() - GAME_PRICE );
+            }
         }
     } );
-
-    m_canPlay = Config::getCoinNumber() >= GAME_PRICE;
-
-    playBgm();
 
     return true;
 }

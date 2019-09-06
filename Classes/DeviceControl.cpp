@@ -18,6 +18,10 @@ unsigned char DeviceControl::sm_cmdOpenRelay1[] = { (unsigned char)0x10, 0x12, 0
 unsigned char DeviceControl::sm_cmdCloseRelay1[] = { (unsigned char)0x10, 0x12, 0x03, 0x00, 0x00, 0x0D };
 
 
+// 0-9 . -
+unsigned char DeviceControl::sm_ledNumberMask[] = { (unsigned char)0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F, 0x80, 0x40 };
+
+
 std::map< int, std::function< void( int, bool ) > >  DeviceControl::sm_buttonStateListenPool;
 
 bool DeviceControl::init()
@@ -100,7 +104,7 @@ void DeviceControl::openBaffle( std::function< void(void) > p_opendCallback )
 
 
     t_listenId = listenButtonState( [=]( int p_btnId, bool p_state ){
-        if( p_btnId == 0x01 && p_state )
+        if( p_btnId == BTN_BAFFLE_DOWN && p_state )
         {
             Serial::write( sm_cmdCloseRelay1, sizeof( sm_cmdCloseRelay1 ) );
             
@@ -121,7 +125,7 @@ void DeviceControl::closeBaffle( std::function< void(void) > p_closedCallback )
     Serial::write( sm_cmdOpenRelay1, sizeof( sm_cmdOpenRelay1 ) );
 
     t_listenId = listenButtonState( [=]( int p_btnId, bool p_state ){
-        if( p_btnId == 0x02 && p_state )
+        if( p_btnId == BTN_BAFFLE_UP && p_state )
         {
             Serial::write( sm_cmdCloseRelay1, sizeof( sm_cmdCloseRelay1 ) );
             Director::getInstance()->getScheduler()->performFunctionInCocosThread([=]
@@ -131,6 +135,18 @@ void DeviceControl::closeBaffle( std::function< void(void) > p_closedCallback )
             unbindListenButtonState( t_listenId );
         }
     } );
+}
+
+void DeviceControl::showCoin( const unsigned int p_coin )
+{
+    std::stringstream t_sstr;
+    t_sstr << p_coin;
+
+    unsigned char t_cmd[] = { (unsigned char)0x30, 0x012, 0x05, 0x01, sm_ledNumberMask[0], sm_ledNumberMask[0], sm_ledNumberMask[0], sm_ledNumberMask[0] };
+
+    //for( int i = 0; i <  )
+
+    Serial::write( t_cmd, sizeof( t_cmd ) );
 }
 
 

@@ -10,6 +10,9 @@ class MainScene: public Scene
 {
 public:
     CREATE_FUNC( MainScene );
+
+    static void setRank( const int p_score );
+
 protected:
     virtual bool init( void ) override;
 

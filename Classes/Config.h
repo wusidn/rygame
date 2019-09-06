@@ -1,6 +1,9 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+
+#define FREE_GAME 0
+
 class Config
 {
 public:

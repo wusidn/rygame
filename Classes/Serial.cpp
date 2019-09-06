@@ -79,8 +79,6 @@ bool Serial::open( void )
                         cmd_buffer_cursor = 0;
                     }
                 }
-            }else{
-                usleep( 1000 );
             }
 
             usleep( 100 );
